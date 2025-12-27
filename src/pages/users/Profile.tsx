@@ -1,8 +1,10 @@
-import { useEffect } from 'react';
-import { Form, Input, Button, Card, Typography, Avatar, Space, Upload, message, Divider, Tag, Alert } from 'antd';
-import { UserOutlined, MailOutlined, UploadOutlined, SaveOutlined } from '@ant-design/icons';
+import { useEffect, useState } from 'react';
+import { Form, Input, Button, Card, Typography, Avatar, Space, Upload, message, Divider, Tag, Alert, Popconfirm } from 'antd';
+import { UserOutlined, MailOutlined, UploadOutlined, SaveOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useUserStore } from '../../stores/userStore';
 import { useAuthStore } from '../../stores/authStore';
+import { userApi } from '../../services/api/user';
+import { getUserAvatar } from '../../utils/avatar';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 
 const { Title, Text } = Typography;
@@ -22,8 +24,6 @@ const Profile = () => {
       form.setFieldsValue({
         username: profile.username,
         email: profile.email,
-        first_name: profile.first_name || '',
-        last_name: profile.last_name || '',
       });
     }
   }, [profile, form]);
@@ -34,39 +34,98 @@ const Profile = () => {
       await updateProfile({
         username: values.username,
         email: values.email,
-        first_name: values.first_name,
-        last_name: values.last_name,
       });
       message.success('Profile updated successfully');
-    } catch (error) {
+    } catch (error: any) {
+      // Handle validation errors properly
+      const errorData = error.response?.data;
+      if (errorData) {
+        // Display field-specific errors
+        const fieldErrors = Object.entries(errorData)
+          .filter(([key]) => key !== 'detail' && key !== 'non_field_errors')
+          .map(([field, messages]) => {
+            const messageArray = Array.isArray(messages) ? messages : [messages];
+            return `${field}: ${messageArray.join(', ')}`;
+          });
+        
+        if (fieldErrors.length > 0) {
+          message.error(fieldErrors.join('; '));
+        } else if (errorData.detail) {
+          message.error(errorData.detail);
+        } else if (errorData.non_field_errors) {
+          const nonFieldErrors = Array.isArray(errorData.non_field_errors) 
+            ? errorData.non_field_errors.join(', ')
+            : errorData.non_field_errors;
+          message.error(nonFieldErrors);
+        } else {
+          message.error('Failed to update profile');
+        }
+      } else {
       message.error('Failed to update profile');
+    }
     }
   };
 
+  const [uploading, setUploading] = useState(false);
+  const [removing, setRemoving] = useState(false);
+
+  const handleAvatarUpload = async (file: File) => {
+    const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png';
+    if (!isJpgOrPng) {
+      message.error('You can only upload JPG/PNG file!');
+      return false;
+    }
+    const isLt2M = file.size / 1024 / 1024 < 2;
+    if (!isLt2M) {
+      message.error('Image must be smaller than 2MB!');
+      return false;
+    }
+
+    setUploading(true);
+    try {
+      await userApi.uploadAvatar(file);
+      // Update the profile in the store
+      await fetchProfile();
+      message.success('Avatar uploaded successfully');
+      return false; // Prevent default upload behavior
+    } catch (error: any) {
+      // Handle validation errors
+      const errorMessage = error.response?.data?.profile_picture?.[0] || 
+                          error.response?.data?.detail || 
+                          error.response?.data?.message ||
+                          'Avatar upload failed';
+      message.error(errorMessage);
+      return false;
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    setRemoving(true);
+    try {
+      await userApi.removeAvatar();
+      await fetchProfile();
+      message.success('Avatar removed successfully');
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.profile_picture?.[0] || 
+                          error.response?.data?.detail || 
+                          error.response?.data?.message ||
+                          'Failed to remove avatar';
+      message.error(errorMessage);
+    } finally {
+      setRemoving(false);
+    }
+  };
+
+
   const uploadProps = {
-    name: 'avatar',
+    name: 'profile_picture',
     listType: 'picture-card',
     className: 'avatar-uploader',
     showUploadList: false,
-    action: '/api/user/avatar/', // This would need to be implemented in the backend
-    beforeUpload: (file: File) => {
-      const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png';
-      if (!isJpgOrPng) {
-        message.error('You can only upload JPG/PNG file!');
-      }
-      const isLt2M = file.size / 1024 / 1024 < 2;
-      if (!isLt2M) {
-        message.error('Image must smaller than 2MB!');
-      }
-      return isJpgOrPng && isLt2M;
-    },
-    onChange: (info: any) => {
-      if (info.file.status === 'done') {
-        message.success(`${info.file.name} file uploaded successfully`);
-      } else if (info.file.status === 'error') {
-        message.error(`${info.file.name} file upload failed.`);
-      }
-    },
+    beforeUpload: handleAvatarUpload,
+    accept: 'image/jpeg,image/png',
   };
 
   if (isLoading) {
@@ -105,18 +164,40 @@ const Profile = () => {
           <div style={{ textAlign: 'center', marginBottom: 16 }}>
             <Avatar
               size={120}
-              icon={<UserOutlined />}
-              src={profile.avatar}
+              src={profile.profile_picture ? getUserAvatar(profile) : undefined}
+              icon={!profile.profile_picture ? <UserOutlined /> : undefined}
               style={{ backgroundColor: '#1890ff', marginBottom: 16 }}
             >
               {profile.username?.charAt(0).toUpperCase()}
             </Avatar>
 
+            <Space orientation="vertical" size="small" style={{ width: '100%' }}>
             <Upload {...uploadProps}>
-              <Button icon={<UploadOutlined />}>
-                Change Avatar
+                <Button icon={<UploadOutlined />} loading={uploading} disabled={uploading || removing} block>
+                  {uploading ? 'Uploading...' : 'Change Avatar'}
               </Button>
             </Upload>
+              
+              {profile.profile_picture && (
+                <Popconfirm
+                  title="Remove avatar?"
+                  description="Are you sure you want to remove your profile picture?"
+                  onConfirm={handleRemoveAvatar}
+                  okText="Yes"
+                  cancelText="No"
+                >
+                  <Button 
+                    icon={<DeleteOutlined />} 
+                    danger 
+                    loading={removing} 
+                    disabled={uploading || removing}
+                    block
+                  >
+                    {removing ? 'Removing...' : 'Remove Avatar'}
+                  </Button>
+                </Popconfirm>
+              )}
+            </Space>
           </div>
 
           <Divider />
@@ -145,8 +226,8 @@ const Profile = () => {
             <div>
               <Text strong>Account Status:</Text>
               <br />
-              <Tag color={profile.is_active ? 'success' : 'error'}>
-                {profile.is_active ? 'Active' : 'Inactive'}
+              <Tag color={profile.is_banned ? 'error' : 'success'}>
+                {profile.is_banned ? 'Banned' : 'Active'}
               </Tag>
             </div>
           </Space>
@@ -161,8 +242,6 @@ const Profile = () => {
             initialValues={{
               username: profile.username,
               email: profile.email,
-              first_name: profile.first_name || '',
-              last_name: profile.last_name || '',
             }}
           >
             <Form.Item
@@ -188,19 +267,6 @@ const Profile = () => {
               <Input prefix={<MailOutlined />} />
             </Form.Item>
 
-            <Form.Item
-              name="first_name"
-              label="First Name"
-            >
-              <Input />
-            </Form.Item>
-
-            <Form.Item
-              name="last_name"
-              label="Last Name"
-            >
-              <Input />
-            </Form.Item>
 
             <Form.Item>
               <Button

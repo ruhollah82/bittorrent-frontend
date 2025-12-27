@@ -1,13 +1,11 @@
 import { useEffect } from 'react';
-import { Card, Typography, Row, Col, Statistic, Progress, Space, Divider, Tag, Table } from 'antd';
+import { Card, Typography, Row, Col, Statistic, Progress, Space, Divider, Tag, Alert } from 'antd';
 import {
   UploadOutlined,
   DownloadOutlined,
   TrophyOutlined,
   CreditCardOutlined,
-  FileTextOutlined,
   RiseOutlined,
-  FallOutlined,
 } from '@ant-design/icons';
 import { useUserStore } from '../../stores/userStore';
 import { useCreditStore } from '../../stores/creditStore';
@@ -17,14 +15,13 @@ const { Title, Text } = Typography;
 
 const UserStats = () => {
   const { profile, stats, fetchProfile, fetchStats } = useUserStore();
-  const { balance, ratioStatus, fetchBalance, fetchRatioStatus } = useCreditStore();
+  const { ratioStatus, fetchRatioStatus } = useCreditStore();
 
   useEffect(() => {
     fetchProfile();
     fetchStats();
-    fetchBalance();
     fetchRatioStatus();
-  }, [fetchProfile, fetchStats, fetchBalance, fetchRatioStatus]);
+  }, [fetchProfile, fetchStats, fetchRatioStatus]);
 
   const getRatioColor = (ratio: string) => {
     const ratioNum = parseFloat(ratio);
@@ -39,11 +36,10 @@ const UserStats = () => {
     return Math.min((ratioNum / 2.0) * 100, 100);
   };
 
-  const formatBytes = (bytes: string) => {
-    const num = parseFloat(bytes);
+  const formatBytes = (bytes: number) => {
     const units = ['B', 'KB', 'MB', 'GB', 'TB'];
     let unitIndex = 0;
-    let value = num;
+    let value = bytes;
 
     while (value >= 1024 && unitIndex < units.length - 1) {
       value /= 1024;
@@ -58,21 +54,21 @@ const UserStats = () => {
   }
 
   const ratioNum = parseFloat(stats.ratio);
-  const uploadedNum = parseFloat(stats.uploaded);
-  const downloadedNum = parseFloat(stats.downloaded);
+  const uploadedNum = stats.lifetime_upload;
+  const downloadedNum = stats.lifetime_download;
 
   const statsData = [
     {
       key: '1',
       metric: 'Total Uploaded',
-      value: formatBytes(stats.uploaded),
+      value: formatBytes(stats.lifetime_upload),
       icon: <UploadOutlined />,
       color: '#52c41a',
     },
     {
       key: '2',
       metric: 'Total Downloaded',
-      value: formatBytes(stats.downloaded),
+      value: formatBytes(stats.lifetime_download),
       icon: <DownloadOutlined />,
       color: '#fa8c16',
     },
@@ -85,24 +81,17 @@ const UserStats = () => {
     },
     {
       key: '4',
-      metric: 'Credits Balance',
-      value: balance?.credits || '0',
+      metric: 'Available Credits',
+      value: stats.available_credit,
       icon: <CreditCardOutlined />,
       color: '#722ed1',
     },
     {
       key: '5',
-      metric: 'Torrents Uploaded',
-      value: stats.torrents_uploaded.toString(),
-      icon: <FileTextOutlined />,
-      color: '#1890ff',
-    },
-    {
-      key: '6',
-      metric: 'Bonus Points',
-      value: stats.bonus_points,
+      metric: 'Active Torrents',
+      value: stats.active_torrents,
       icon: <RiseOutlined />,
-      color: '#13c2c2',
+      color: '#1890ff',
     },
   ];
 
@@ -131,7 +120,7 @@ const UserStats = () => {
         {/* Ratio Status */}
         <Col xs={24} lg={12}>
           <Card title="Ratio Status">
-            <Space direction="vertical" size="large" style={{ width: '100%' }}>
+            <Space orientation="vertical" size="large" style={{ width: '100%' }}>
               <div>
                 <Text strong>Current Ratio: </Text>
                 <Text style={{ fontSize: '24px', fontWeight: 'bold', color: getRatioColor(stats.ratio) }}>
@@ -167,16 +156,18 @@ const UserStats = () => {
         {/* Activity Summary */}
         <Col xs={24} lg={12}>
           <Card title="Activity Summary">
-            <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+            <Space orientation="vertical" size="middle" style={{ width: '100%' }}>
               <div>
-                <Text strong>Torrents Seeding: </Text>
-                <Text>{stats.torrents_seeding}</Text>
+                <Text strong>Active Torrents: </Text>
+                <Text>{stats.active_torrents}</Text>
               </div>
 
-              <div>
-                <Text strong>Torrents Leeching: </Text>
-                <Text>{stats.torrents_leeching}</Text>
-              </div>
+              {stats.last_announce && (
+                <div>
+                  <Text strong>Last Announce: </Text>
+                  <Text>{new Date(stats.last_announce).toLocaleString()}</Text>
+                </div>
+              )}
 
               <Divider />
 
@@ -185,11 +176,31 @@ const UserStats = () => {
                 <div style={{ marginTop: 8 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                     <span>Uploaded:</span>
-                    <span style={{ color: '#52c41a' }}>{formatBytes(stats.uploaded)}</span>
+                    <span style={{ color: '#52c41a' }}>{formatBytes(stats.lifetime_upload)}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span>Downloaded:</span>
-                    <span style={{ color: '#fa8c16' }}>{formatBytes(stats.downloaded)}</span>
+                    <span style={{ color: '#fa8c16' }}>{formatBytes(stats.lifetime_download)}</span>
+                  </div>
+                </div>
+              </div>
+
+              <Divider />
+
+              <div>
+                <Text strong>Credit Information:</Text>
+                <div style={{ marginTop: 8 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span>Total Credits:</span>
+                    <span style={{ color: '#722ed1' }}>{stats.total_credit}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span>Locked Credits:</span>
+                    <span style={{ color: '#fa8c16' }}>{stats.locked_credit}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Available Credits:</span>
+                    <span style={{ color: '#52c41a' }}>{stats.available_credit}</span>
                   </div>
                 </div>
               </div>
@@ -244,11 +255,11 @@ const UserStats = () => {
           <Col xs={24} md={8}>
             <Card size="small">
               <Statistic
-                title="Torrents per GB Uploaded"
-                value={(stats.torrents_uploaded / (uploadedNum / (1024 * 1024 * 1024))).toFixed(2)}
-                suffix="torrents/GB"
-                prefix={<FileTextOutlined />}
-                valueStyle={{ color: '#1890ff' }}
+                title="Data Ratio"
+                value={ratioNum.toFixed(2)}
+                suffix=""
+                prefix={<TrophyOutlined />}
+                valueStyle={{ color: getRatioColor(stats.ratio) }}
               />
             </Card>
           </Col>

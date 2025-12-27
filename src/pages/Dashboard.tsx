@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Row, Col, Card, Statistic, List, Avatar, Typography, Space, Tag, Progress, Alert } from 'antd';
+import { getUserAvatar } from '../utils/avatar';
 import {
-  FileTextOutlined,
   UploadOutlined,
   DownloadOutlined,
   CreditCardOutlined,
@@ -18,15 +18,27 @@ const { Title, Text } = Typography;
 const Dashboard = () => {
   const { profile, stats, fetchProfile, fetchStats } = useUserStore();
   const { popularTorrents, fetchPopularTorrents } = useTorrentStore();
-  const { balance, ratioStatus, fetchBalance, fetchRatioStatus } = useCreditStore();
+  const { ratioStatus, fetchRatioStatus } = useCreditStore();
 
   useEffect(() => {
     fetchProfile();
     fetchStats();
-    fetchBalance();
     fetchRatioStatus();
     fetchPopularTorrents(5);
-  }, [fetchProfile, fetchStats, fetchBalance, fetchRatioStatus, fetchPopularTorrents]);
+  }, [fetchProfile, fetchStats, fetchRatioStatus, fetchPopularTorrents]);
+
+  const formatBytes = (bytes: number) => {
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    let unitIndex = 0;
+    let value = bytes;
+
+    while (value >= 1024 && unitIndex < units.length - 1) {
+      value /= 1024;
+      unitIndex++;
+    }
+
+    return `${value.toFixed(2)} ${units[unitIndex]}`;
+  };
 
   const getRatioColor = (ratio: string) => {
     const ratioNum = parseFloat(ratio);
@@ -53,9 +65,8 @@ const Dashboard = () => {
           <Card>
             <Statistic
               title="Total Uploaded"
-              value={stats?.uploaded || '0'}
+              value={formatBytes(stats?.lifetime_upload || 0)}
               prefix={<UploadOutlined />}
-              suffix="GB"
               valueStyle={{ color: '#3f8600' }}
             />
           </Card>
@@ -64,9 +75,8 @@ const Dashboard = () => {
           <Card>
             <Statistic
               title="Total Downloaded"
-              value={stats?.downloaded || '0'}
+              value={formatBytes(stats?.lifetime_download || 0)}
               prefix={<DownloadOutlined />}
-              suffix="GB"
               valueStyle={{ color: '#cf1322' }}
             />
           </Card>
@@ -93,13 +103,13 @@ const Dashboard = () => {
         <Col xs={24} sm={12} md={6}>
           <Card>
             <Statistic
-              title="Credits"
-              value={balance?.credits || '0'}
+              title="Available Credits"
+              value={stats?.available_credit || '0'}
               prefix={<CreditCardOutlined />}
               valueStyle={{ color: '#722ed1' }}
             />
             <Text type="secondary" style={{ fontSize: '12px' }}>
-              Bonus: {balance?.bonus_points || '0'}
+              Total: {stats?.total_credit || '0'}
             </Text>
           </Card>
         </Col>
@@ -122,8 +132,8 @@ const Dashboard = () => {
                 <div style={{ textAlign: 'center', marginBottom: 16 }}>
                   <Avatar
                     size={64}
-                    icon={<UserOutlined />}
-                    src={profile.avatar}
+                    src={profile.profile_picture ? getUserAvatar(profile) : undefined}
+                    icon={!profile.profile_picture ? <UserOutlined /> : undefined}
                     style={{ backgroundColor: '#1890ff', marginBottom: 8 }}
                   >
                     {profile.username?.charAt(0).toUpperCase()}
@@ -134,7 +144,7 @@ const Dashboard = () => {
                   <Tag color="blue">{profile.user_class}</Tag>
                 </div>
 
-                <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                <Space orientation="vertical" size="small" style={{ width: '100%' }}>
                   <div>
                     <Text strong>Email:</Text>
                     <br />
@@ -146,9 +156,9 @@ const Dashboard = () => {
                     <Text>{new Date(profile.date_joined).toLocaleDateString()}</Text>
                   </div>
                   <div>
-                    <Text strong>Torrents uploaded:</Text>
+                    <Text strong>Active Torrents:</Text>
                     <br />
-                    <Text>{stats?.torrents_uploaded || 0}</Text>
+                    <Text>{stats?.active_torrents || 0}</Text>
                   </div>
                 </Space>
               </div>
@@ -184,9 +194,12 @@ const Dashboard = () => {
                   <List.Item.Meta
                     avatar={
                       <Avatar
-                        icon={<FileTextOutlined />}
+                        src={torrent.uploader?.profile_picture ? getUserAvatar(torrent.uploader) : undefined}
+                        icon={!torrent.uploader?.profile_picture ? <UserOutlined /> : undefined}
                         style={{ backgroundColor: '#1890ff' }}
-                      />
+                      >
+                        {torrent.uploader?.username?.charAt(0).toUpperCase()}
+                      </Avatar>
                     }
                     title={<Text strong>{torrent.name}</Text>}
                     description={

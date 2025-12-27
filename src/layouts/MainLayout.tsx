@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Layout, Menu, Avatar, Dropdown, Button, Badge, Space, Typography, Switch } from 'antd';
+import { getUserAvatar } from '../utils/avatar';
 import {
   MenuUnfoldOutlined,
   MenuFoldOutlined,
@@ -218,8 +219,8 @@ const MainLayout = ({ children }: MainLayoutProps) => {
             >
               <Space style={{ cursor: 'pointer' }}>
                 <Avatar
-                  icon={<UserOutlined />}
-                  src={user?.avatar}
+                  src={user?.profile_picture ? getUserAvatar(user) : undefined}
+                  icon={!user?.profile_picture ? <UserOutlined /> : undefined}
                   style={{ backgroundColor: '#1890ff' }}
                 >
                   {user?.username?.charAt(0).toUpperCase()}
