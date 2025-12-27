@@ -176,7 +176,14 @@ const TorrentDetail = () => {
                   <br />
                   <Text type="secondary" style={{ fontSize: '12px' }}>
                     <ClockCircleOutlined style={{ marginRight: 4 }} />
-                    {new Date(selectedTorrent.created_at).toLocaleDateString()}
+                    {(() => {
+                      try {
+                        return new Date(selectedTorrent.created_at).toLocaleDateString();
+                      } catch (error) {
+                        console.error('Invalid date format:', selectedTorrent.created_at);
+                        return 'Invalid Date';
+                      }
+                    })()}
                   </Text>
                 </div>
               </Space>

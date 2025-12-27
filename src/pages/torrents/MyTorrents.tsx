@@ -91,9 +91,16 @@ const MyTorrents = () => {
     },
     {
       title: 'Uploaded',
-      dataIndex: 'uploaded_at',
-      key: 'uploaded_at',
-      render: (date: string) => new Date(date).toLocaleDateString(),
+      dataIndex: 'created_at',
+      key: 'created_at',
+      render: (date: string) => {
+        try {
+          return new Date(date).toLocaleDateString();
+        } catch (error) {
+          console.error('Invalid date format:', date);
+          return 'Invalid Date';
+        }
+      },
     },
     {
       title: 'Actions',
