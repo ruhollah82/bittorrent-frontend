@@ -51,13 +51,15 @@ export interface Torrent {
   info_hash: string;
   name: string;
   size: number;
-  size_formatted: string;
+  size_formatted: number;
   files_count: number;
   created_by_username: string;
   created_at: string;
-  category: string;
+  category: number | null;
+  category_name: string | null;
+  category_slug: string | null;
   is_private: boolean;
-  age_days: string;
+  age_days: number;
   // Legacy fields for compatibility
   description?: string;
   tags?: string[];

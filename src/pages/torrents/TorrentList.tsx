@@ -86,7 +86,9 @@ const TorrentList = () => {
         <div>
           <div style={{ fontWeight: 'bold', marginBottom: 4 }}>{name}</div>
           <Space size="small">
-            <Tag color="blue">{record.category}</Tag>
+            {record.category_name && (
+              <Tag color="blue">{record.category_name}</Tag>
+            )}
             {record.tags && Array.isArray(record.tags) && record.tags.map((tag) => (
               <Tag key={tag} size="small">
                 {tag}

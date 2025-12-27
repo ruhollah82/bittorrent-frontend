@@ -205,7 +205,7 @@ const Dashboard = () => {
                     description={
                       <Space>
                         <Text type="secondary">{formatBytes(torrent.size)}</Text>
-                        <Tag>{torrent.category}</Tag>
+                        {torrent.category_name && <Tag>{torrent.category_name}</Tag>}
                         <Text type="secondary">
                           by {torrent.uploader?.username}
                         </Text>
