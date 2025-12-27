@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { App as AntdApp } from 'antd';
 import AppRouter from './router/AppRouter';
 import { useAuthStore } from './stores/authStore';
 import { ThemeProvider } from './theme';
@@ -17,9 +18,11 @@ function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider>
-        <NotificationProvider>
-          <AppRouter />
-        </NotificationProvider>
+        <AntdApp>
+          <NotificationProvider>
+            <AppRouter />
+          </NotificationProvider>
+        </AntdApp>
       </ThemeProvider>
     </ErrorBoundary>
   );
