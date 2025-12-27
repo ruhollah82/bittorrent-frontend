@@ -1,0 +1,16 @@
+{
+  "name": "BitTorrent Tracker",
+  "short_name": "BT Tracker",
+  "description": "A comprehensive BitTorrent tracker with user management, credit system, and advanced analytics",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1890ff",
+  "icons": [
+    {
+      "src": "/vite.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

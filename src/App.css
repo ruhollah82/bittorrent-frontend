@@ -1,0 +1,231 @@
+@import "tailwindcss";
+
+/* Custom animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.animate-slide-in-up {
+  animation: slideInUp 0.6s ease-out;
+}
+
+.animate-pulse-slow {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Skip link accessibility */
+.skip-link {
+  @apply absolute left-[-9999px] top-3 bg-blue-600 text-white px-4 py-2 rounded transition-all duration-300 z-50;
+}
+
+.skip-link:focus {
+  @apply left-3;
+}
+
+/* Responsive utilities */
+@media (max-width: 768px) {
+  .ant-layout-sider {
+    @apply w-20 min-w-20 max-w-20;
+  }
+
+  .ant-layout-sider-collapsed {
+    @apply w-0;
+  }
+
+  .ant-menu-item .ant-menu-title-content {
+    @apply hidden;
+  }
+
+  .ant-menu-item-icon {
+    @apply mr-0;
+  }
+}
+
+/* Custom scrollbar with Tailwind */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(209 213 219) transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  @apply w-2 h-2;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  @apply bg-gray-100 dark:bg-gray-800;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 dark:bg-gray-600 rounded;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  @apply bg-blue-500;
+}
+
+/* Auth layout optimizations */
+.ant-row {
+  height: 100% !important;
+}
+
+.ant-col {
+  height: 100% !important;
+}
+
+@media (max-width: 768px) {
+  .auth-form-spacing .ant-form-item {
+    @apply mb-4;
+  }
+
+  .auth-button-spacing .ant-btn {
+    @apply h-11 text-base;
+  }
+}
+
+@media (min-width: 769px) {
+  .auth-card-hover {
+    @apply transition-all duration-200 hover:shadow-2xl hover:-translate-y-0.5;
+  }
+
+  .auth-input-focus:focus,
+  .auth-input-focus.ant-input-affix-wrapper-focused {
+    @apply border-blue-500 shadow-blue-500/20;
+    box-shadow: 0 0 0 2px rgb(59 130 246 / 0.2);
+  }
+}
+
+/* Modern Login Page Enhancements */
+.ant-input-affix-wrapper,
+.ant-input {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.ant-input-affix-wrapper:hover {
+  border-color: rgb(96 165 250) !important;
+  box-shadow: 0 0 0 1px rgb(96 165 250 / 0.1) !important;
+}
+
+.ant-input-affix-wrapper-focused,
+.ant-input-affix-wrapper:focus-within {
+  border-color: rgb(59 130 246) !important;
+  box-shadow: 0 0 0 3px rgb(59 130 246 / 0.1) !important;
+}
+
+.ant-btn-primary {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.ant-btn-primary::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.ant-btn-primary:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+.ant-btn-primary:active {
+  transform: scale(0.98);
+}
+
+/* Responsive form improvements */
+@media (max-width: 640px) {
+  .ant-form-item {
+    margin-bottom: 1rem !important;
+  }
+
+  .ant-input-affix-wrapper,
+  .ant-input {
+    font-size: 16px !important; /* Prevents zoom on iOS */
+  }
+}
+
+/* Dark mode enhancements */
+.dark .ant-input-affix-wrapper,
+.dark .ant-input {
+  background-color: rgb(31 41 55) !important;
+  border-color: rgb(55 65 81) !important;
+  color: rgb(243 244 246) !important;
+}
+
+.dark .ant-input-affix-wrapper:hover {
+  border-color: rgb(96 165 250) !important;
+}
+
+.dark .ant-input-affix-wrapper-focused,
+.dark .ant-input-affix-wrapper:focus-within {
+  border-color: rgb(59 130 246) !important;
+}
+
+.dark .ant-input::placeholder {
+  color: rgb(156 163 175) !important;
+}
+
+/* Ultra-wide screen optimizations */
+@media (min-width: 1440px) {
+  .ultra-wide-card {
+    max-width: min(1600px, 85vw) !important;
+  }
+}
+
+@media (min-width: 1920px) {
+  .ultra-wide-card {
+    max-width: min(1800px, 80vw) !important;
+  }
+
+  .ultra-wide-h1 {
+    font-size: clamp(2.5rem, 4vw, 4rem) !important;
+  }
+
+  .ultra-wide-h2 {
+    font-size: clamp(2rem, 3vw, 3rem) !important;
+  }
+}
+
+/* Custom component styles */
+.auth-bg-pattern {
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
