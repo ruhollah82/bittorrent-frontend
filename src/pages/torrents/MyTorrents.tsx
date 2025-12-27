@@ -38,8 +38,10 @@ const MyTorrents = () => {
         <div>
           <div style={{ fontWeight: 'bold', marginBottom: 4 }}>{name}</div>
           <Space size="small">
-            <Tag color="blue">{record.category}</Tag>
-            {record.tags.map((tag) => (
+            {record.category_name && (
+              <Tag color="blue">{record.category_name}</Tag>
+            )}
+            {record.tags && Array.isArray(record.tags) && record.tags.map((tag) => (
               <Tag key={tag} size="small">
                 {tag}
               </Tag>
@@ -52,7 +54,13 @@ const MyTorrents = () => {
       title: 'Size',
       dataIndex: 'size',
       key: 'size',
-      render: (size: number) => `${(size / (1024 * 1024)).toFixed(2)} MB`,
+      render: (size: number, record: Torrent) => {
+        // Use size_formatted if available, otherwise format size
+        const formattedSize = record.size_formatted ?
+          `${record.size_formatted.toFixed(2)} GB` :
+          `${(size / (1024 * 1024)).toFixed(2)} MB`;
+        return formattedSize;
+      },
     },
     {
       title: 'Seeders',
@@ -61,7 +69,7 @@ const MyTorrents = () => {
       render: (seeders: number) => (
         <span style={{ color: '#52c41a' }}>
           <UploadOutlined style={{ marginRight: 4 }} />
-          {seeders}
+          {seeders || 0}
         </span>
       ),
     },
@@ -72,7 +80,7 @@ const MyTorrents = () => {
       render: (leechers: number) => (
         <span style={{ color: '#fa8c16' }}>
           <DownloadOutlined style={{ marginRight: 4 }} />
-          {leechers}
+          {leechers || 0}
         </span>
       ),
     },
@@ -81,6 +89,8 @@ const MyTorrents = () => {
       dataIndex: 'health',
       key: 'health',
       render: (health: string) => {
+        if (!health) return <Tag color="default">Unknown</Tag>;
+
         const colors = {
           healthy: 'success',
           warning: 'warning',

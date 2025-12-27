@@ -104,7 +104,19 @@ export const torrentApi = {
     page?: number;
     ordering?: string;
   }): Promise<PaginatedResponse<Torrent>> => {
-    const response = await apiClient.get<PaginatedResponse<Torrent>>('/torrents/my-torrents/', { params });
-    return response.data;
+    const response = await apiClient.get<{
+      user_torrents: Torrent[];
+      count?: number;
+      next?: string | null;
+      previous?: string | null;
+    }>('/torrents/my-torrents/', { params });
+
+    // Transform to standard paginated response format
+    return {
+      count: response.data.count || response.data.user_torrents.length,
+      next: response.data.next || null,
+      previous: response.data.previous || null,
+      results: response.data.user_torrents,
+    };
   },
 };
