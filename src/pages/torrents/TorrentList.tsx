@@ -218,7 +218,21 @@ const TorrentList = () => {
           >
             {categories && Array.isArray(categories) && categories.map((category) => (
               <Option key={category.id} value={category.name}>
-                {category.name}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span
+                    style={{
+                      color: category.color,
+                      fontSize: '14px'
+                    }}
+                    dangerouslySetInnerHTML={{ __html: category.icon }}
+                  />
+                  <span>{category.name}</span>
+                  {category.count > 0 && (
+                    <span style={{ color: '#999', fontSize: '12px' }}>
+                      ({category.count})
+                    </span>
+                  )}
+                </div>
               </Option>
             ))}
           </Select>

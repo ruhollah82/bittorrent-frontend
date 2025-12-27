@@ -79,8 +79,8 @@ export const torrentApi = {
 
   // Categories
   getCategories: async (): Promise<TorrentCategory[]> => {
-    const response = await apiClient.get<TorrentCategory[]>('/torrents/categories/');
-    return response.data;
+    const response = await apiClient.get<{ categories: TorrentCategory[]; total_categories: number }>('/torrents/categories/');
+    return response.data.categories;
   },
 
   // Popular torrents

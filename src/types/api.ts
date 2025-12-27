@@ -91,8 +91,11 @@ export interface TorrentUploadRequest {
 export interface TorrentCategory {
   id: number;
   name: string;
+  slug: string;
   description: string;
-  icon?: string;
+  icon: string;
+  color: string;
+  count: number;
 }
 
 export interface CreditTransaction {
