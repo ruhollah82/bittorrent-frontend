@@ -10,9 +10,6 @@ class ApiClient {
     this.client = axios.create({
       baseURL: BASE_URL,
       timeout: 10000,
-      headers: {
-        'Content-Type': 'application/json',
-      },
     });
 
     this.setupInterceptors();
@@ -24,6 +21,10 @@ class ApiClient {
       (config) => {
         const token = localStorage.getItem('access_token');
         if (token) {
+          // Ensure headers object exists
+          if (!config.headers) {
+            config.headers = {} as any;
+          }
           config.headers.Authorization = `Bearer ${token}`;
         }
         return config;
@@ -37,19 +38,28 @@ class ApiClient {
       async (error) => {
         const originalRequest = error.config;
 
-        if (error.response?.status === 401 && !originalRequest._retry) {
+        // Don't retry refresh token endpoint or login endpoint
+        const isAuthEndpoint = originalRequest.url?.includes('/auth/login/') || 
+                               originalRequest.url?.includes('/auth/refresh/');
+        
+        if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
           originalRequest._retry = true;
 
           try {
             await this.refreshToken();
             const token = localStorage.getItem('access_token');
+            if (token && originalRequest.headers) {
             originalRequest.headers.Authorization = `Bearer ${token}`;
+            }
             return this.client(originalRequest);
           } catch (refreshError) {
             // Refresh failed, redirect to login
             localStorage.removeItem('access_token');
             localStorage.removeItem('refresh_token');
+            // Only redirect if we're not already on the login page
+            if (window.location.pathname !== '/login') {
             window.location.href = '/login';
+            }
             return Promise.reject(refreshError);
           }
         }
@@ -71,16 +81,31 @@ class ApiClient {
           throw new Error('No refresh token available');
         }
 
-        const response = await axios.post(`${BASE_URL}/auth/refresh/`, {
-          refresh: refreshToken,
-        });
+        // Use the apiClient's post method to ensure proper error handling
+        // But we need to bypass the interceptor for refresh to avoid infinite loop
+        const response = await axios.post(
+          `${BASE_URL}/auth/refresh/`,
+          { refresh: refreshToken },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
 
         const { access, refresh } = response.data;
+        if (!access || !refresh) {
+          throw new Error('Invalid token response from refresh endpoint');
+        }
+
         localStorage.setItem('access_token', access);
         localStorage.setItem('refresh_token', refresh);
 
         resolve(response.data);
       } catch (error) {
+        // Clear tokens on refresh failure
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
         reject(error);
       } finally {
         this.refreshPromise = null;

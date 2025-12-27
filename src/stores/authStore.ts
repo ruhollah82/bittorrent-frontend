@@ -32,11 +32,25 @@ export const useAuthStore = create<AuthState>()(
         try {
           const tokenPair = await authApi.login(credentials);
 
+          // Verify tokenPair structure
+          if (!tokenPair || !tokenPair.access || !tokenPair.refresh) {
+            throw new Error('Invalid token response from server');
+          }
+
           // Store tokens
           localStorage.setItem('access_token', tokenPair.access);
           localStorage.setItem('refresh_token', tokenPair.refresh);
 
-          // Get user profile
+          // Verify tokens are stored
+          const storedToken = localStorage.getItem('access_token');
+          if (!storedToken) {
+            throw new Error('Failed to store access token');
+          }
+
+          // Small delay to ensure localStorage is synced
+          await new Promise(resolve => setTimeout(resolve, 10));
+
+          // Get user profile with explicit token in headers
           const user = await userApi.getProfile();
 
           set({
@@ -45,9 +59,14 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
           });
         } catch (error: any) {
+          // Clear tokens on error
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
           set({
-            error: error.response?.data?.detail || 'Login failed',
+            error: error.response?.data?.detail || error.message || 'Login failed',
             isLoading: false,
+            isAuthenticated: false,
+            user: null,
           });
           throw error;
         }

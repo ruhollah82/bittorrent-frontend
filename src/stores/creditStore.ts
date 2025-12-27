@@ -81,10 +81,12 @@ export const useCreditStore = create<CreditState>((set, get) => ({
     set({ error: null });
     try {
       const userClasses = await creditApi.getUserClasses();
-      set({ userClasses });
+      // Ensure userClasses is an array
+      set({ userClasses: Array.isArray(userClasses) ? userClasses : [] });
     } catch (error: any) {
       set({
         error: error.response?.data?.detail || 'Failed to fetch user classes',
+        userClasses: [], // Set to empty array on error
       });
     }
   },
