@@ -3,6 +3,7 @@ import type {
   CreditTransaction,
   UserClass,
   UserClassesResponse,
+  UserClassDetails,
   RatioStatus,
   DownloadCheck,
   LockCreditResponse,

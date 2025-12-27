@@ -43,16 +43,19 @@ class ApiClient {
                                originalRequest.url?.includes('/auth/refresh/');
         
         if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
+          console.log('401 error detected, attempting token refresh for:', originalRequest.url);
           originalRequest._retry = true;
 
           try {
             await this.refreshToken();
             const token = localStorage.getItem('access_token');
+            console.log('Retrying request with new token:', token ? 'present' : 'missing');
             if (token && originalRequest.headers) {
             originalRequest.headers.Authorization = `Bearer ${token}`;
             }
             return this.client(originalRequest);
           } catch (refreshError) {
+            console.error('Token refresh failed, redirecting to login:', refreshError);
             // Refresh failed, redirect to login
             localStorage.removeItem('access_token');
             localStorage.removeItem('refresh_token');
@@ -81,8 +84,9 @@ class ApiClient {
           throw new Error('No refresh token available');
         }
 
-        // Use the apiClient's post method to ensure proper error handling
-        // But we need to bypass the interceptor for refresh to avoid infinite loop
+        console.log('Attempting token refresh with refresh token:', refreshToken ? 'present' : 'missing');
+
+        // Use direct axios call to avoid interceptor loops
         const response = await axios.post(
           `${BASE_URL}/auth/refresh/`,
           { refresh: refreshToken },
@@ -93,10 +97,34 @@ class ApiClient {
           }
         );
 
-        const { access, refresh } = response.data;
-        if (!access || !refresh) {
-          throw new Error('Invalid token response from refresh endpoint');
+        console.log('Refresh response:', response.data);
+
+        // Check for different possible response formats
+        const data = response.data;
+        let access, refresh;
+
+        if (data.access && data.refresh) {
+          // Standard format: { access, refresh }
+          access = data.access;
+          refresh = data.refresh;
+        } else if (data.token && data.refresh_token) {
+          // Alternative format: { token, refresh_token }
+          access = data.token;
+          refresh = data.refresh_token;
+        } else if (data.tokens && data.tokens.access && data.tokens.refresh) {
+          // Nested format: { tokens: { access, refresh } }
+          access = data.tokens.access;
+          refresh = data.tokens.refresh;
+        } else {
+          console.error('Unexpected refresh response format:', data);
+          throw new Error('Invalid token response format from refresh endpoint');
         }
+
+        console.log('Token refresh successful, storing new tokens');
+        localStorage.setItem('access_token', access);
+        localStorage.setItem('refresh_token', refresh);
+
+        return { access, refresh };
 
         localStorage.setItem('access_token', access);
         localStorage.setItem('refresh_token', refresh);
