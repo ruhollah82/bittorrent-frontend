@@ -45,7 +45,7 @@ export const creditApi = {
   getUserClasses: async (): Promise<UserClass[]> => {
     const response = await apiClient.get<UserClassesResponse>('/credits/user-classes/');
     // Transform object response to array format
-    return Object.entries(response.data).map(([name, details]) => ({
+    return Object.entries(response.data).map(([name, details]: [string, UserClassDetails]) => ({
       name,
       requirements: details.requirements,
       benefits: details.benefits,
