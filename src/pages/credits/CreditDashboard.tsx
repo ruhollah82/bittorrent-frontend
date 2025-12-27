@@ -190,8 +190,8 @@ const CreditDashboard = () => {
                 }
                 title={
                   <Space>
-                    <Text strong>{transaction.reason}</Text>
-                    <Tag color={transaction.transaction_type === 'credit' ? 'success' : 'error'}>
+                    <Text strong>{transaction.description}</Text>
+                    <Tag color={transaction.transaction_type === 'upload' ? 'success' : 'error'}>
                       {transaction.transaction_type.toUpperCase()}
                     </Tag>
                   </Space>
@@ -200,18 +200,18 @@ const CreditDashboard = () => {
                   <Space>
                     <Text>Amount: {transaction.amount}</Text>
                     <Text type="secondary">
-                      {new Date(transaction.timestamp).toLocaleDateString()}
+                      {new Date(transaction.created_at).toLocaleDateString()}
                     </Text>
                   </Space>
                 }
               />
               <div style={{ textAlign: 'right' }}>
-                <Text strong style={{ color: transaction.transaction_type === 'credit' ? '#52c41a' : '#ff4d4f' }}>
-                  {transaction.transaction_type === 'credit' ? '+' : '-'}{transaction.amount}
+                <Text strong style={{ color: transaction.transaction_type === 'upload' ? '#52c41a' : '#ff4d4f' }}>
+                  {transaction.transaction_type === 'upload' ? '+' : '-'}{transaction.amount}
                 </Text>
                 <br />
                 <Text type="secondary" style={{ fontSize: '12px' }}>
-                  Balance: {transaction.balance_after}
+                  Status: {transaction.status}
                 </Text>
               </div>
             </List.Item>

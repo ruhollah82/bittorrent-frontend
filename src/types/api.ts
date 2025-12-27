@@ -102,12 +102,14 @@ export interface TorrentCategory {
 
 export interface CreditTransaction {
   id: number;
-  user: number;
+  user_username: string;
+  torrent_name: string | null;
+  transaction_type: string;
   amount: string;
-  transaction_type: 'credit' | 'debit';
-  reason: string;
-  timestamp: string;
-  balance_after: string;
+  description: string;
+  status: string;
+  created_at: string;
+  processed_at: string | null;
 }
 
 export interface UserClass {

@@ -23,7 +23,7 @@ const Transactions = () => {
 
   const [filters, setFilters] = useState({
     transaction_type: '',
-    ordering: '-timestamp',
+    ordering: '-created_at',
     search: '',
   });
 
@@ -43,9 +43,15 @@ const Transactions = () => {
   const columns = [
     {
       title: 'Date',
-      dataIndex: 'timestamp',
-      key: 'timestamp',
-      render: (timestamp: string) => new Date(timestamp).toLocaleString(),
+      dataIndex: 'created_at',
+      key: 'created_at',
+      render: (created_at: string) => {
+        try {
+          return new Date(created_at).toLocaleString();
+        } catch (error) {
+          return 'Invalid Date';
+        }
+      },
       sorter: true,
     },
     {
@@ -53,13 +59,13 @@ const Transactions = () => {
       dataIndex: 'transaction_type',
       key: 'transaction_type',
       render: (type: string) => (
-        <Tag color={type === 'credit' ? 'success' : 'error'}>
+        <Tag color={type === 'upload' ? 'success' : type === 'download' ? 'error' : 'default'}>
           {type.toUpperCase()}
         </Tag>
       ),
       filters: [
-        { text: 'Credit', value: 'credit' },
-        { text: 'Debit', value: 'debit' },
+        { text: 'Upload', value: 'upload' },
+        { text: 'Download', value: 'download' },
       ],
     },
     {
@@ -69,37 +75,48 @@ const Transactions = () => {
       render: (amount: string, record: CreditTransaction) => (
         <Text
           style={{
-            color: record.transaction_type === 'credit' ? '#52c41a' : '#ff4d4f',
+            color: record.transaction_type === 'upload' ? '#52c41a' : '#ff4d4f',
             fontWeight: 'bold',
           }}
         >
-          {record.transaction_type === 'credit' ? '+' : '-'}{amount}
+          {record.transaction_type === 'upload' ? '+' : '-'}{amount}
         </Text>
       ),
       sorter: true,
     },
     {
-      title: 'Reason',
-      dataIndex: 'reason',
-      key: 'reason',
-      render: (reason: string) => <Text>{reason}</Text>,
+      title: 'Description',
+      dataIndex: 'description',
+      key: 'description',
+      render: (description: string) => <Text>{description}</Text>,
     },
     {
-      title: 'Balance After',
-      dataIndex: 'balance_after',
-      key: 'balance_after',
-      render: (balance: string) => <Text strong>{balance}</Text>,
-      sorter: true,
+      title: 'Torrent',
+      dataIndex: 'torrent_name',
+      key: 'torrent_name',
+      render: (torrent_name: string | null) => (
+        <Text>{torrent_name || '-'}</Text>
+      ),
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status: string) => (
+        <Tag color={status === 'completed' ? 'success' : 'warning'}>
+          {status.toUpperCase()}
+        </Tag>
+      ),
     },
   ];
 
   // Calculate totals
   const totalCredits = transactions
-    .filter(t => t.transaction_type === 'credit')
+    .filter(t => t.transaction_type === 'upload')
     .reduce((sum, t) => sum + parseFloat(t.amount), 0);
 
   const totalDebits = transactions
-    .filter(t => t.transaction_type === 'debit')
+    .filter(t => t.transaction_type === 'download')
     .reduce((sum, t) => sum + parseFloat(t.amount), 0);
 
   return (
