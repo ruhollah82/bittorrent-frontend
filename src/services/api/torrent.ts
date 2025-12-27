@@ -85,10 +85,18 @@ export const torrentApi = {
 
   // Popular torrents
   getPopularTorrents: async (limit?: number): Promise<Torrent[]> => {
-    const response = await apiClient.get<Torrent[]>('/torrents/popular/', {
+    const response = await apiClient.get<Torrent[] | { results: Torrent[] }>('/torrents/popular/', {
       params: { limit },
     });
-    return response.data;
+
+    // Handle both direct array response and paginated response
+    if (Array.isArray(response.data)) {
+      return response.data;
+    } else if (response.data && Array.isArray(response.data.results)) {
+      return response.data.results;
+    }
+
+    return [];
   },
 
   // User's torrents

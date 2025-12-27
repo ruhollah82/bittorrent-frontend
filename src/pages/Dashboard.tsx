@@ -177,7 +177,7 @@ const Dashboard = () => {
             }
           >
             <List
-              dataSource={popularTorrents}
+              dataSource={Array.isArray(popularTorrents) ? popularTorrents : []}
               renderItem={(torrent) => (
                 <List.Item
                   actions={[
@@ -204,7 +204,7 @@ const Dashboard = () => {
                     title={<Text strong>{torrent.name}</Text>}
                     description={
                       <Space>
-                        <Text type="secondary">{torrent.size} MB</Text>
+                        <Text type="secondary">{formatBytes(torrent.size)}</Text>
                         <Tag>{torrent.category}</Tag>
                         <Text type="secondary">
                           by {torrent.uploader?.username}
