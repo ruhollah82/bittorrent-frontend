@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Form, Input, Button, Card, Typography, Avatar, Space, Upload, message, Divider, Tag, Alert, Popconfirm } from 'antd';
-import { UserOutlined, MailOutlined, UploadOutlined, SaveOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Form, Input, Button, Card, Typography, Avatar, Space, Upload, message, Divider, Tag, Alert, Popconfirm, Row, Col, Statistic } from 'antd';
+import { UserOutlined, MailOutlined, UploadOutlined, SaveOutlined, DeleteOutlined, GiftOutlined, CrownOutlined } from '@ant-design/icons';
 import { useUserStore } from '../../stores/userStore';
 import { useAuthStore } from '../../stores/authStore';
 import { userApi } from '../../services/api/user';
+import { authApi } from '../../services/api/auth';
 import { getUserAvatar } from '../../utils/avatar';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 
@@ -14,6 +15,8 @@ const Profile = () => {
   const [form] = Form.useForm();
   const { profile, isLoading, error, fetchProfile, updateProfile, clearError } = useUserStore();
   const { user } = useAuthStore();
+  const [generatingInvite, setGeneratingInvite] = useState(false);
+  const [generatedInvite, setGeneratedInvite] = useState<{ code: string; expires_at: string; is_active: boolean } | null>(null);
 
   useEffect(() => {
     fetchProfile();
@@ -63,6 +66,32 @@ const Profile = () => {
       } else {
       message.error('Failed to update profile');
     }
+    }
+  };
+
+  const handleGenerateInvite = async () => {
+    setGeneratingInvite(true);
+    try {
+      const result = await authApi.generateInvite();
+      setGeneratedInvite(result);
+      message.success('Invite code generated successfully!');
+      // Refresh profile to update credit balance
+      fetchProfile();
+    } catch (error: any) {
+      console.error('Failed to generate invite:', error);
+      const errorData = error.response?.data;
+
+      if (error.response?.status === 403) {
+        message.error(`Access denied: ${errorData?.message || 'Insufficient user class'}`);
+      } else if (error.response?.status === 402) {
+        message.error(`Insufficient credits: Need ${errorData?.required_credit}, have ${errorData?.available_credit}`);
+      } else if (error.response?.status === 429) {
+        message.error(`Daily limit exceeded: ${errorData?.used_today}/${errorData?.limit} invites used today`);
+      } else {
+        message.error('Failed to generate invite code');
+      }
+    } finally {
+      setGeneratingInvite(false);
     }
   };
 
@@ -280,6 +309,108 @@ const Profile = () => {
               </Button>
             </Form.Item>
           </Form>
+        </Card>
+
+        {/* Invite Code Generation */}
+        <Card title="Generate Invite Code" style={{ marginTop: 24 }}>
+          <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+            {/* Requirements Info */}
+            <Alert
+              message="Invite Code Requirements"
+              description={
+                <div>
+                  <Text strong>User Class:</Text> Member, Trusted, or Elite<br />
+                  <Text strong>Cost:</Text> 5.00 credits per code<br />
+                  <Text strong>Daily Limit:</Text> 2 codes per day<br />
+                  <Text strong>Expiration:</Text> 7 days from creation
+                </div>
+              }
+              type="info"
+              showIcon
+            />
+
+            {/* Current Status */}
+            <Row gutter={[16, 16]}>
+              <Col xs={24} md={8}>
+                <Card size="small">
+                  <Statistic
+                    title="Your Class"
+                    value={profile.user_class}
+                    prefix={<CrownOutlined />}
+                    valueStyle={{
+                      color: profile.user_class === 'elite' ? '#722ed1' :
+                             profile.user_class === 'trusted' ? '#52c41a' :
+                             profile.user_class === 'member' ? '#1890ff' : '#d9d9d9'
+                    }}
+                  />
+                </Card>
+              </Col>
+              <Col xs={24} md={8}>
+                <Card size="small">
+                  <Statistic
+                    title="Available Credits"
+                    value={(() => {
+                      // This would need to be fetched from balance API
+                      // For now, showing a placeholder
+                      return 'Check Dashboard';
+                    })()}
+                    prefix={<GiftOutlined />}
+                  />
+                </Card>
+              </Col>
+              <Col xs={24} md={8}>
+                <Card size="small">
+                  <Statistic
+                    title="Can Generate"
+                    value={(() => {
+                      const eligibleClasses = ['member', 'trusted', 'elite'];
+                      return eligibleClasses.includes(profile.user_class || '') ? 'Yes' : 'No';
+                    })()}
+                    valueStyle={{
+                      color: (() => {
+                        const eligibleClasses = ['member', 'trusted', 'elite'];
+                        return eligibleClasses.includes(profile.user_class || '') ? '#52c41a' : '#ff4d4f';
+                      })()
+                    }}
+                  />
+                </Card>
+              </Col>
+            </Row>
+
+            {/* Generate Button */}
+            <div style={{ textAlign: 'center', marginTop: 16 }}>
+              <Button
+                type="primary"
+                icon={<GiftOutlined />}
+                size="large"
+                loading={generatingInvite}
+                onClick={handleGenerateInvite}
+                disabled={!['member', 'trusted', 'elite'].includes(profile.user_class || '')}
+              >
+                {generatingInvite ? 'Generating...' : 'Generate Invite Code (5.00 credits)'}
+              </Button>
+            </div>
+
+            {/* Generated Invite Display */}
+            {generatedInvite && (
+              <Alert
+                message="Invite Code Generated!"
+                description={
+                  <div>
+                    <Text strong>Code:</Text> <Text code copyable>{generatedInvite.code}</Text><br />
+                    <Text strong>Expires:</Text> {new Date(generatedInvite.expires_at).toLocaleString()}<br />
+                    <Text strong>Status:</Text> <Tag color={generatedInvite.is_active ? 'success' : 'error'}>
+                      {generatedInvite.is_active ? 'Active' : 'Inactive'}
+                    </Tag>
+                  </div>
+                }
+                type="success"
+                showIcon
+                closable
+                onClose={() => setGeneratedInvite(null)}
+              />
+            )}
+          </Space>
         </Card>
       </div>
     </div>

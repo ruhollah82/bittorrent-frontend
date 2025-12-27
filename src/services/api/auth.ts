@@ -52,4 +52,10 @@ export const authApi = {
     const response = await apiClient.post<InviteCode>('/auth/invite/create/');
     return response.data;
   },
+
+  // Generate user invite codes (costs credits)
+  generateInvite: async (): Promise<{ code: string; expires_at: string; is_active: boolean }> => {
+    const response = await apiClient.post('/auth/invite/generate/');
+    return response.data;
+  },
 };
