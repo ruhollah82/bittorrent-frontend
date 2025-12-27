@@ -164,7 +164,7 @@ const SecurityDashboard = () => {
                       </Space>
                     }
                     description={
-                      <Space direction="vertical" size="small">
+                      <Space orientation="vertical" size="small">
                         <Text>{activity.description}</Text>
                         <Space>
                           <Text type="secondary" style={{ fontSize: '12px' }}>
@@ -204,7 +204,7 @@ const SecurityDashboard = () => {
                       </Space>
                     }
                     description={
-                      <Space direction="vertical" size="small">
+                      <Space orientation="vertical" size="small">
                         <Text>{block.reason}</Text>
                         <Space>
                           <Text type="secondary" style={{ fontSize: '12px' }}>

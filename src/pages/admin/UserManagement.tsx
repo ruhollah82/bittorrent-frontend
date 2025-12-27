@@ -127,7 +127,7 @@ const UserManagement = () => {
       dataIndex: 'is_active',
       key: 'is_active',
       render: (isActive: boolean, record: User) => (
-        <Space direction="vertical" size="small">
+        <Space orientation="vertical" size="small">
           <Tag color={isActive ? 'success' : 'error'}>
             {isActive ? 'Active' : 'Inactive'}
           </Tag>

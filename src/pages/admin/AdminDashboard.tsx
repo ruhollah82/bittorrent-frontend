@@ -181,7 +181,7 @@ const AdminDashboard = () => {
                     }
                     title={activity.activity_type}
                     description={
-                      <Space direction="vertical" size="small">
+                      <Space orientation="vertical" size="small">
                         <Text type="secondary">{activity.description}</Text>
                         <Space>
                           <Text type="secondary" style={{ fontSize: '12px' }}>

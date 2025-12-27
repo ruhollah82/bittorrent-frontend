@@ -211,7 +211,7 @@ const RegisterPage = () => {
         <Text type="secondary">Already have an account?</Text>
       </Divider>
 
-      <Space direction="vertical" style={{ width: '100%' }}>
+      <Space orientation="vertical" style={{ width: '100%' }}>
         <Link to="/login">
           <Button type="link" block>
             Sign In Instead

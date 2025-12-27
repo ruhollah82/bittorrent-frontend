@@ -41,7 +41,9 @@ const CreditDashboard = () => {
     return Math.min((ratioNum / 2.0) * 100, 100);
   };
 
-  const currentUserClass = userClasses.find(uc => uc.name === profile?.user_class);
+  const currentUserClass = Array.isArray(userClasses) 
+    ? userClasses.find(uc => uc.name === profile?.user_class)
+    : null;
 
   if (!balance || !ratioStatus) {
     return <LoadingSpinner text="Loading credit information..." />;
@@ -174,7 +176,7 @@ const CreditDashboard = () => {
         style={{ marginBottom: 24 }}
       >
         <List
-          dataSource={transactions.slice(0, 5)}
+          dataSource={Array.isArray(transactions) ? transactions.slice(0, 5) : []}
           renderItem={(transaction) => (
             <List.Item>
               <List.Item.Meta

@@ -116,7 +116,7 @@ const LoginPage = () => {
       </Divider>
 
       {/* Register Link */}
-      <Space direction="vertical" className="w-full">
+      <Space orientation="vertical" className="w-full">
         <Link to="/register" className="block w-full">
           <Button 
             type="link" 
