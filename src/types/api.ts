@@ -112,14 +112,38 @@ export interface CreditTransaction {
   processed_at: string | null;
 }
 
-export interface UserClass {
-  id: number;
-  name: string;
-  min_ratio: string;
-  download_cost_multiplier: string;
-  upload_credit_multiplier: string;
+export interface UserClassRequirements {
+  min_ratio: number;
+  min_upload: number;
+  account_age_days: number;
+}
+
+export interface UserClassBenefits {
+  download_multiplier: number;
+  bonus_points: number;
+}
+
+export interface UserClassRestrictions {
   max_torrents: number;
-  color: string;
+  max_download_speed: string;
+}
+
+export interface UserClassDetails {
+  requirements: UserClassRequirements;
+  benefits: UserClassBenefits;
+  restrictions: UserClassRestrictions;
+}
+
+export interface UserClassesResponse {
+  [className: string]: UserClassDetails;
+}
+
+// For backward compatibility and easier usage
+export interface UserClass {
+  name: string;
+  requirements: UserClassRequirements;
+  benefits: UserClassBenefits;
+  restrictions: UserClassRestrictions;
 }
 
 export interface SuspiciousActivity {

@@ -21,15 +21,14 @@ const { Title, Text } = Typography;
 
 const CreditDashboard = () => {
   const navigate = useNavigate();
-  const { balance, ratioStatus, userClasses, transactions, fetchBalance, fetchRatioStatus, fetchUserClasses, fetchTransactions } = useCreditStore();
+  const { balance, userClasses, transactions, fetchBalance, fetchUserClasses, fetchTransactions } = useCreditStore();
   const { profile } = useUserStore();
 
   useEffect(() => {
     fetchBalance();
-    fetchRatioStatus();
     fetchUserClasses();
     fetchTransactions({ page_size: 5 }); // Get recent 5 transactions
-  }, [fetchBalance, fetchRatioStatus, fetchUserClasses, fetchTransactions]);
+  }, [fetchBalance, fetchUserClasses, fetchTransactions]);
 
 
   const formatBytes = (bytes: number) => {
@@ -49,7 +48,7 @@ const CreditDashboard = () => {
     ? userClasses.find(uc => uc.name === profile?.user_class)
     : null;
 
-  if (!balance || !ratioStatus) {
+  if (!balance) {
     return <LoadingSpinner text="Loading credit information..." />;
   }
 
@@ -158,8 +157,8 @@ const CreditDashboard = () => {
 
             <Col xs={24} md={8}>
               <Statistic
-                title="Download Cost Multiplier"
-                value={`${currentUserClass.download_cost_multiplier}x`}
+                title="Download Multiplier"
+                value={`${currentUserClass.benefits.download_multiplier}x`}
                 prefix={<DollarOutlined />}
                 valueStyle={{ color: '#fa8c16' }}
               />
@@ -167,8 +166,8 @@ const CreditDashboard = () => {
 
             <Col xs={24} md={8}>
               <Statistic
-                title="Upload Credit Multiplier"
-                value={`${currentUserClass.upload_credit_multiplier}x`}
+                title="Bonus Points Multiplier"
+                value={`${currentUserClass.benefits.bonus_points}x`}
                 prefix={<RiseOutlined />}
                 valueStyle={{ color: '#52c41a' }}
               />
@@ -178,35 +177,35 @@ const CreditDashboard = () => {
           <Divider />
 
           <Row gutter={[16, 16]}>
-            <Col xs={24} md={8}>
+            <Col xs={24} md={6}>
               <Statistic
                 title="Required Ratio"
-                value={currentUserClass.min_ratio}
+                value={currentUserClass.requirements.min_ratio}
                 prefix={<TrophyOutlined />}
               />
             </Col>
 
-            <Col xs={24} md={8}>
+            <Col xs={24} md={6}>
+              <Statistic
+                title="Min Upload"
+                value={formatBytes(currentUserClass.requirements.min_upload)}
+                prefix={<UploadOutlined />}
+              />
+            </Col>
+
+            <Col xs={24} md={6}>
               <Statistic
                 title="Max Torrents"
-                value={currentUserClass.max_torrents}
+                value={currentUserClass.restrictions.max_torrents}
                 prefix={<ShoppingOutlined />}
               />
             </Col>
 
-            <Col xs={24} md={8}>
+            <Col xs={24} md={6}>
               <div style={{ textAlign: 'center' }}>
-                <Text strong>Class Color</Text>
-                <div
-                  style={{
-                    width: 32,
-                    height: 32,
-                    backgroundColor: currentUserClass.color,
-                    borderRadius: '50%',
-                    margin: '8px auto',
-                    border: '2px solid #d9d9d9',
-                  }}
-                />
+                <Text strong>Account Age Required</Text>
+                <br />
+                <Text type="secondary">{currentUserClass.requirements.account_age_days} days</Text>
               </div>
             </Col>
           </Row>

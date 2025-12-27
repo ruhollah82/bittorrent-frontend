@@ -190,7 +190,7 @@ const UserManagement = () => {
             onChange={(value) => handlePromoteUser(record.id, parseInt(value))}
           >
             {userClasses.map((userClass) => (
-              <Option key={userClass.id} value={userClass.id}>
+              <Option key={userClass.name} value={userClass.name}>
                 {userClass.name}
               </Option>
             ))}

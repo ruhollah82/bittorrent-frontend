@@ -2,6 +2,7 @@ import { apiClient } from './client';
 import type {
   CreditTransaction,
   UserClass,
+  UserClassesResponse,
   RatioStatus,
   DownloadCheck,
   LockCreditResponse,
@@ -42,8 +43,14 @@ export const creditApi = {
 
   // User classes
   getUserClasses: async (): Promise<UserClass[]> => {
-    const response = await apiClient.get<UserClass[]>('/credits/user-classes/');
-    return response.data;
+    const response = await apiClient.get<UserClassesResponse>('/credits/user-classes/');
+    // Transform object response to array format
+    return Object.entries(response.data).map(([name, details]) => ({
+      name,
+      requirements: details.requirements,
+      benefits: details.benefits,
+      restrictions: details.restrictions,
+    }));
   },
 
   // Download operations
