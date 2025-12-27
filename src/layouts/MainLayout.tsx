@@ -196,10 +196,10 @@ const MainLayout = ({ children }: MainLayoutProps) => {
             {balance && (
               <div style={{ textAlign: 'right' }}>
                 <Text strong style={{ display: 'block', fontSize: '14px' }}>
-                  Credits: {balance.credits}
+                  Credits: {balance.available_credit}
                 </Text>
                 <Text type="secondary" style={{ fontSize: '12px' }}>
-                  Bonus: {balance.bonus_points}
+                  Total: {balance.total_credit}
                 </Text>
               </div>
             )}

@@ -8,6 +8,9 @@ import {
   TrophyOutlined,
   ShoppingOutlined,
   BankOutlined,
+  UploadOutlined,
+  DownloadOutlined,
+  SettingOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router';
 import { useCreditStore } from '../../stores/creditStore';
@@ -28,17 +31,18 @@ const CreditDashboard = () => {
     fetchTransactions({ page_size: 5 }); // Get recent 5 transactions
   }, [fetchBalance, fetchRatioStatus, fetchUserClasses, fetchTransactions]);
 
-  const getRatioColor = (ratio: string) => {
-    const ratioNum = parseFloat(ratio);
-    if (ratioNum >= 2.0) return 'success';
-    if (ratioNum >= 1.0) return 'processing';
-    if (ratioNum >= 0.5) return 'warning';
-    return 'error';
-  };
 
-  const getRatioProgress = (ratio: string) => {
-    const ratioNum = parseFloat(ratio);
-    return Math.min((ratioNum / 2.0) * 100, 100);
+  const formatBytes = (bytes: number) => {
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    let unitIndex = 0;
+    let value = bytes;
+
+    while (value >= 1024 && unitIndex < units.length - 1) {
+      value /= 1024;
+      unitIndex++;
+    }
+
+    return `${value.toFixed(2)} ${units[unitIndex]}`;
   };
 
   const currentUserClass = Array.isArray(userClasses) 
@@ -58,14 +62,17 @@ const CreditDashboard = () => {
         <Col xs={24} md={12}>
           <Card>
             <Statistic
-              title="Credit Balance"
-              value={balance.credits}
+              title="Available Credits"
+              value={balance.available_credit}
               prefix={<CreditCardOutlined />}
               valueStyle={{ color: '#722ed1', fontSize: '32px' }}
             />
             <div style={{ marginTop: 16 }}>
-              <Text strong>Bonus Points: </Text>
-              <Text style={{ color: '#13c2c2' }}>{balance.bonus_points}</Text>
+              <Text strong>Total Credits: </Text>
+              <Text style={{ color: '#52c41a' }}>{balance.total_credit}</Text>
+              <br />
+              <Text strong>Locked Credits: </Text>
+              <Text style={{ color: '#fa8c16' }}>{balance.locked_credit}</Text>
             </div>
           </Card>
         </Col>
@@ -74,18 +81,55 @@ const CreditDashboard = () => {
           <Card>
             <Statistic
               title="Current Ratio"
-              value={ratioStatus.ratio}
+              value={balance.ratio}
               prefix={<TrophyOutlined />}
-              valueStyle={{ color: getRatioColor(ratioStatus.ratio), fontSize: '32px' }}
+              valueStyle={{ color: balance.ratio >= 2.0 ? '#52c41a' : balance.ratio >= 1.0 ? '#1890ff' : '#ff4d4f', fontSize: '32px' }}
             />
             <Progress
-              percent={getRatioProgress(ratioStatus.ratio)}
-              status={getRatioColor(ratioStatus.ratio) as any}
+              percent={Math.min((balance.ratio / 2.0) * 100, 100)}
+              status={balance.ratio >= 2.0 ? 'success' : balance.ratio >= 1.0 ? 'normal' : 'exception'}
               showInfo={false}
               style={{ marginTop: 8 }}
             />
             <Text type="secondary" style={{ fontSize: '12px', marginTop: 4, display: 'block' }}>
-              Target: {ratioStatus.required_ratio}
+              User Class: {balance.user_class}
+            </Text>
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Upload/Download Statistics */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Col xs={24} md={8}>
+          <Card>
+            <Statistic
+              title="Lifetime Upload"
+              value={formatBytes(balance.lifetime_upload)}
+              prefix={<UploadOutlined />}
+              valueStyle={{ color: '#52c41a' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} md={8}>
+          <Card>
+            <Statistic
+              title="Lifetime Download"
+              value={formatBytes(balance.lifetime_download)}
+              prefix={<DownloadOutlined />}
+              valueStyle={{ color: '#ff4d4f' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} md={8}>
+          <Card>
+            <Statistic
+              title="Download Multiplier"
+              value={`${balance.download_multiplier}x`}
+              prefix={<SettingOutlined />}
+              valueStyle={{ color: '#1890ff' }}
+            />
+            <Text type="secondary" style={{ fontSize: '12px', marginTop: 4, display: 'block' }}>
+              Max Torrents: {balance.max_torrents}
             </Text>
           </Card>
         </Col>
@@ -93,9 +137,9 @@ const CreditDashboard = () => {
 
       {/* Ratio Status Alert */}
       <Alert
-        message={`Ratio Status: ${ratioStatus.status.toUpperCase()}`}
-        description={ratioStatus.message}
-        type={getRatioColor(ratioStatus.ratio) as any}
+        message={`Ratio Status: ${balance.ratio >= 2.0 ? 'EXCELLENT' : balance.ratio >= 1.0 ? 'GOOD' : balance.ratio >= 0.5 ? 'WARNING' : 'CRITICAL'}`}
+        description={`Current ratio: ${balance.ratio}. ${balance.ratio >= 2.0 ? 'Excellent ratio achieved!' : balance.ratio >= 1.0 ? 'Good ratio maintained.' : 'Consider uploading more content.'}`}
+        type={balance.ratio >= 2.0 ? 'success' : balance.ratio >= 1.0 ? 'info' : balance.ratio >= 0.5 ? 'warning' : 'error'}
         showIcon
         style={{ marginBottom: 24 }}
       />

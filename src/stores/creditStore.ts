@@ -9,7 +9,17 @@ import type {
 } from '../types/api';
 
 interface CreditState {
-  balance: { credits: string; bonus_points: string } | null;
+  balance: {
+    total_credit: string;
+    locked_credit: string;
+    available_credit: string;
+    lifetime_upload: number;
+    lifetime_download: number;
+    ratio: number;
+    user_class: string;
+    download_multiplier: number;
+    max_torrents: number;
+  } | null;
   transactions: CreditTransaction[];
   userClasses: UserClass[];
   ratioStatus: RatioStatus | null;

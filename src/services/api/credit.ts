@@ -10,8 +10,18 @@ import type {
 } from '../../types/api';
 
 export const creditApi = {
-  // Balance
-  getBalance: async (): Promise<{ credits: string; bonus_points: string }> => {
+  // Balance/Stats
+  getBalance: async (): Promise<{
+    total_credit: string;
+    locked_credit: string;
+    available_credit: string;
+    lifetime_upload: number;
+    lifetime_download: number;
+    ratio: number;
+    user_class: string;
+    download_multiplier: number;
+    max_torrents: number;
+  }> => {
     const response = await apiClient.get('/credits/balance/');
     return response.data;
   },
