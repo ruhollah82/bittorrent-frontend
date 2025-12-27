@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react';
-import { Table, Input, Button, Space, Tag, Avatar, Typography, Card, Select, Pagination } from 'antd';
+import { Table, Input, Button, Space, Tag, Avatar, Typography, Card, Select, Pagination, message } from 'antd';
 import {
   SearchOutlined,
   DownloadOutlined,
   UploadOutlined,
   EyeOutlined,
   FilterOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router';
 import { useTorrentStore } from '../../stores/torrentStore';
+import { torrentApi } from '../../services/api/torrent';
+import { getUserAvatar } from '../../utils/avatar';
 import type { Torrent } from '../../types/api';
 
 const { Title } = Typography;
@@ -56,6 +59,24 @@ const TorrentList = () => {
     });
   };
 
+  const handleDownload = async (torrent: Torrent) => {
+    try {
+      const blob = await torrentApi.downloadTorrent(torrent.info_hash);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `${torrent.name}.torrent`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Failed to download torrent:', error);
+      message.error('Failed to download torrent');
+    }
+  };
+
   const columns = [
     {
       title: 'Name',
@@ -66,7 +87,7 @@ const TorrentList = () => {
           <div style={{ fontWeight: 'bold', marginBottom: 4 }}>{name}</div>
           <Space size="small">
             <Tag color="blue">{record.category}</Tag>
-            {record.tags.map((tag) => (
+            {record.tags && Array.isArray(record.tags) && record.tags.map((tag) => (
               <Tag key={tag} size="small">
                 {tag}
               </Tag>
@@ -125,7 +146,11 @@ const TorrentList = () => {
       key: 'uploader',
       render: (uploader: any) => (
         <Space>
-          <Avatar size="small" icon={<span>U</span>}>
+          <Avatar
+            size="small"
+            src={uploader?.profile_picture ? getUserAvatar(uploader) : undefined}
+            icon={!uploader?.profile_picture ? <UserOutlined /> : undefined}
+          >
             {uploader?.username?.charAt(0).toUpperCase()}
           </Avatar>
           <span>{uploader?.username}</span>
@@ -154,10 +179,7 @@ const TorrentList = () => {
           <Button
             type="link"
             icon={<DownloadOutlined />}
-            onClick={() => {
-              // Handle download
-              console.log('Download torrent:', record.info_hash);
-            }}
+            onClick={() => handleDownload(record)}
           >
             Download
           </Button>
@@ -194,7 +216,7 @@ const TorrentList = () => {
             style={{ width: 200 }}
             allowClear
           >
-            {categories.map((category) => (
+            {categories && Array.isArray(categories) && categories.map((category) => (
               <Option key={category.id} value={category.name}>
                 {category.name}
               </Option>
@@ -211,7 +233,7 @@ const TorrentList = () => {
       <Card>
         <Table
           columns={columns}
-          dataSource={torrents}
+          dataSource={torrents || []}
           loading={isLoading}
           rowKey="info_hash"
           pagination={false}

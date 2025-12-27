@@ -3,20 +3,23 @@ export interface User {
   id: number;
   username: string;
   email: string;
-  first_name?: string;
-  last_name?: string;
-  is_active: boolean;
-  is_staff: boolean;
-  is_superuser: boolean;
+  profile_picture?: string;
+  user_class: string;
+  total_credit: string;
+  locked_credit: string;
+  available_credit: string;
+  lifetime_upload: number;
+  lifetime_download: number;
+  ratio: string;
+  download_multiplier: string;
+  max_torrents: string;
+  is_banned: boolean;
   date_joined: string;
   last_login?: string;
-  avatar?: string;
-  user_class: string;
-  uploaded: string;
-  downloaded: string;
-  ratio: string;
-  credits: string;
-  bonus_points: string;
+  // Admin fields (may not be present in all responses)
+  is_active?: boolean;
+  is_staff?: boolean;
+  is_superuser?: boolean;
 }
 
 export interface UserRegistrationRequest {
@@ -37,22 +40,36 @@ export interface TokenPair {
   refresh: string;
 }
 
+export interface LoginResponse {
+  message: string;
+  tokens: TokenPair;
+  user: User;
+}
+
 export interface Torrent {
+  id: number;
   info_hash: string;
   name: string;
-  description: string;
   size: number;
+  size_formatted: string;
+  files_count: number;
+  created_by_username: string;
+  created_at: string;
   category: string;
-  tags: string[];
-  uploader: User;
-  uploaded_at: string;
-  seeders: number;
-  leechers: number;
-  completed: number;
-  health: 'healthy' | 'warning' | 'critical';
-  is_active: boolean;
-  file_count: number;
-  files: TorrentFile[];
+  is_private: boolean;
+  age_days: string;
+  // Legacy fields for compatibility
+  description?: string;
+  tags?: string[];
+  uploader?: User;
+  uploaded_at?: string;
+  seeders?: number;
+  leechers?: number;
+  completed?: number;
+  health?: 'healthy' | 'warning' | 'critical';
+  is_active?: boolean;
+  file_count?: number;
+  files?: TorrentFile[];
 }
 
 export interface TorrentFile {
@@ -204,14 +221,15 @@ export interface TorrentStats {
 }
 
 export interface UserStats {
-  uploaded: string;
-  downloaded: string;
+  total_credit: string;
+  locked_credit: string;
+  available_credit: string;
+  lifetime_upload: number;
+  lifetime_download: number;
   ratio: string;
-  credits: string;
-  bonus_points: string;
-  torrents_uploaded: number;
-  torrents_seeding: number;
-  torrents_leeching: number;
+  user_class: string;
+  active_torrents: string;
+  last_announce?: string;
 }
 
 export interface RatioStatus {

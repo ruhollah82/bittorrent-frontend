@@ -9,12 +9,40 @@ import {
   FileTextOutlined,
 } from '@ant-design/icons';
 import { useTorrentStore } from '../../stores/torrentStore';
+import { torrentApi } from '../../services/api/torrent';
+import { message } from 'antd';
 
 const { Title, Text, Paragraph } = Typography;
 
 const TorrentDetail = () => {
   const { infoHash } = useParams<{ infoHash: string }>();
   const { selectedTorrent, isLoading, fetchTorrent } = useTorrentStore();
+
+
+  const handleDownload = async () => {
+    if (!selectedTorrent) {
+      console.error('No torrent selected');
+      message.error('No torrent selected');
+      return;
+    }
+
+    try {
+      const blob = await torrentApi.downloadTorrent(selectedTorrent.info_hash);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `${selectedTorrent.name}.torrent`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      console.log('Download completed successfully');
+    } catch (error) {
+      console.error('Failed to download torrent:', error);
+      message.error('Failed to download torrent');
+    }
+  };
 
   useEffect(() => {
     if (infoHash) {
@@ -40,7 +68,7 @@ const TorrentDetail = () => {
         {/* Main Info */}
         <Col xs={24} lg={16}>
           <Card>
-            <Space direction="vertical" size="large" style={{ width: '100%' }}>
+            <Space orientation="vertical" size="large" style={{ width: '100%' }}>
               <div>
                 <Text strong style={{ fontSize: 16 }}>Description</Text>
                 <Paragraph style={{ marginTop: 8 }}>
@@ -51,18 +79,22 @@ const TorrentDetail = () => {
               <div>
                 <Text strong>Tags:</Text>
                 <div style={{ marginTop: 8 }}>
-                  {selectedTorrent.tags.map((tag) => (
+                  {selectedTorrent.tags && Array.isArray(selectedTorrent.tags) ? (
+                    selectedTorrent.tags.map((tag) => (
                     <Tag key={tag} style={{ marginRight: 8, marginBottom: 4 }}>
                       {tag}
                     </Tag>
-                  ))}
+                    ))
+                  ) : (
+                    <Text type="secondary">No tags available</Text>
+                  )}
                 </div>
               </div>
 
               <Divider />
 
               <div>
-                <Text strong>Files ({selectedTorrent.file_count})</Text>
+                <Text strong>Files ({selectedTorrent.files_count})</Text>
                 <div style={{ marginTop: 8 }}>
                   {selectedTorrent.files?.map((file) => (
                     <div key={file.id} style={{ padding: '8px 0', borderBottom: '1px solid #f0f0f0' }}>
@@ -83,7 +115,7 @@ const TorrentDetail = () => {
 
         {/* Sidebar */}
         <Col xs={24} lg={8}>
-          <Space direction="vertical" size="small" style={{ width: '100%' }}>
+          <Space orientation="vertical" size="small" style={{ width: '100%' }}>
             {/* Download Button */}
             <Card>
               <Button
@@ -91,10 +123,7 @@ const TorrentDetail = () => {
                 icon={<DownloadOutlined />}
                 size="large"
                 block
-                onClick={() => {
-                  // Handle download
-                  console.log('Download torrent:', selectedTorrent.info_hash);
-                }}
+                onClick={handleDownload}
               >
                 Download Torrent
               </Button>
@@ -106,7 +135,7 @@ const TorrentDetail = () => {
                 <Col span={12}>
                   <Statistic
                     title="Seeders"
-                    value={selectedTorrent.seeders}
+                    value={selectedTorrent.seeders || 0}
                     prefix={<UploadOutlined />}
                     valueStyle={{ color: '#3f8600' }}
                   />
@@ -114,7 +143,7 @@ const TorrentDetail = () => {
                 <Col span={12}>
                   <Statistic
                     title="Leechers"
-                    value={selectedTorrent.leechers}
+                    value={selectedTorrent.leechers || 0}
                     prefix={<DownloadOutlined />}
                     valueStyle={{ color: '#cf1322' }}
                   />
@@ -122,13 +151,13 @@ const TorrentDetail = () => {
                 <Col span={12}>
                   <Statistic
                     title="Completed"
-                    value={selectedTorrent.completed}
+                    value={selectedTorrent.completed || 0}
                   />
                 </Col>
                 <Col span={12}>
                   <Statistic
                     title="Size"
-                    value={`${(selectedTorrent.size / (1024 * 1024)).toFixed(2)} MB`}
+                    value={selectedTorrent.size_formatted || `${(selectedTorrent.size / (1024 * 1024)).toFixed(2)} MB`}
                   />
                 </Col>
               </Row>
@@ -139,16 +168,15 @@ const TorrentDetail = () => {
               <Space>
                 <Avatar
                   icon={<UserOutlined />}
-                  src={selectedTorrent.uploader?.avatar}
                 >
-                  {selectedTorrent.uploader?.username?.charAt(0).toUpperCase()}
+                  {selectedTorrent.created_by_username?.charAt(0).toUpperCase()}
                 </Avatar>
                 <div>
-                  <Text strong>{selectedTorrent.uploader?.username}</Text>
+                  <Text strong>{selectedTorrent.created_by_username}</Text>
                   <br />
                   <Text type="secondary" style={{ fontSize: '12px' }}>
                     <ClockCircleOutlined style={{ marginRight: 4 }} />
-                    {new Date(selectedTorrent.uploaded_at).toLocaleDateString()}
+                    {new Date(selectedTorrent.created_at).toLocaleDateString()}
                   </Text>
                 </div>
               </Space>
@@ -166,7 +194,9 @@ const TorrentDetail = () => {
                 }
                 style={{ fontSize: 14, padding: '4px 12px' }}
               >
-                {selectedTorrent.health.toUpperCase()}
+                {selectedTorrent.health && typeof selectedTorrent.health === 'string'
+                  ? selectedTorrent.health.toUpperCase()
+                  : 'UNKNOWN'}
               </Tag>
             </Card>
           </Space>

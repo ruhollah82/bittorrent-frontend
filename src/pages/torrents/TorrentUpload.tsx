@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Form, Input, Button, Card, Upload, Select, Space, Typography, Alert, Tag } from 'antd';
 import { UploadOutlined, FileTextOutlined, TagOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router';
@@ -11,27 +11,56 @@ const { Option } = Select;
 const TorrentUpload = () => {
   const [form] = Form.useForm();
   const navigate = useNavigate();
-  const { categories, uploadTorrent, isLoading, error } = useTorrentStore();
+  const { categories, uploadTorrent, fetchCategories, isLoading, error } = useTorrentStore();
   const [fileList, setFileList] = useState<any[]>([]);
   const [tags, setTags] = useState<string[]>([]);
 
+  useEffect(() => {
+    fetchCategories();
+    console.log('TorrentUpload: fetchCategories called');
+  }, [fetchCategories]);
+
+  console.log('TorrentUpload: categories:', categories);
+  console.log('TorrentUpload: isLoading:', isLoading);
+  console.log('TorrentUpload: error:', error);
+
   const handleUpload = async (values: any) => {
     if (fileList.length === 0) {
+      console.error('No file selected');
+      return;
+    }
+
+    console.log('Uploading with fileList:', fileList);
+    console.log('File object:', fileList[0]);
+
+    const selectedFile = fileList[0];
+    if (!selectedFile) {
+      console.error('File object is invalid');
       return;
     }
 
     const formData = {
-      torrent_file: fileList[0].originFileObj,
+      torrent_file: selectedFile, // Use the file object directly
       name: values.name,
       description: values.description,
       category: values.category,
       tags,
     };
 
+    console.log('Form data prepared:', {
+      torrent_file: formData.torrent_file?.name,
+      name: formData.name,
+      description: formData.description,
+      category: formData.category,
+      tags: formData.tags,
+    });
+
     try {
-      await uploadTorrent(formData);
+      const result = await uploadTorrent(formData);
+      console.log('Upload successful:', result);
       navigate('/my-torrents');
     } catch (error) {
+      console.error('Upload failed:', error);
       // Error is handled by the store
     }
   };
@@ -41,6 +70,7 @@ const TorrentUpload = () => {
       setFileList([]);
     },
     beforeUpload: (file: any) => {
+      console.log('File selected:', file);
       setFileList([file]);
       return false;
     },
@@ -81,9 +111,18 @@ const TorrentUpload = () => {
           onFinish={handleUpload}
         >
           <Form.Item
-            name="torrent_file"
             label="Torrent File"
-            rules={[{ required: true, message: 'Please select a torrent file' }]}
+            rules={[
+              {
+                required: true,
+                validator: (_, value) => {
+                  if (fileList.length === 0) {
+                    return Promise.reject(new Error('Please select a torrent file'));
+                  }
+                  return Promise.resolve();
+                }
+              }
+            ]}
           >
             <Upload {...uploadProps}>
               <Button icon={<UploadOutlined />}>
@@ -121,17 +160,25 @@ const TorrentUpload = () => {
             label="Category"
             rules={[{ required: true, message: 'Please select a category' }]}
           >
-            <Select placeholder="Select category">
-              {categories.map((category) => (
-                <Option key={category.id} value={category.name}>
-                  {category.name}
-                </Option>
-              ))}
+            <Select
+              placeholder={categories && categories.length > 0 ? "Select category" : "Loading categories..."}
+              loading={!categories || categories.length === 0}
+              disabled={!categories || categories.length === 0}
+            >
+              {categories && categories.length > 0 ? (
+                categories.map((category) => (
+                  <Option key={category.id} value={category.name}>
+                    {category.name}
+                  </Option>
+                ))
+              ) : (
+                <Option disabled>Loading categories...</Option>
+              )}
             </Select>
           </Form.Item>
 
           <Form.Item label="Tags">
-            <Space direction="vertical" style={{ width: '100%' }}>
+            <Space orientation="vertical" style={{ width: '100%' }}>
               <Select
                 mode="tags"
                 placeholder="Add tags"
