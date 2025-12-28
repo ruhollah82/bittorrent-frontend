@@ -6,6 +6,8 @@ import type {
   User,
   InviteCode,
   LoginResponse,
+  GenerateInviteResponse,
+  ListUserInvitesResponse,
 } from '../../types/api';
 
 export const authApi = {
@@ -53,9 +55,15 @@ export const authApi = {
     return response.data;
   },
 
-  // Generate user invite codes (costs credits)
-  generateInvite: async (): Promise<{ code: string; expires_at: string; is_active: boolean }> => {
+  // Generate user invite codes (costs 1.00 credits)
+  generateInvite: async (): Promise<GenerateInviteResponse> => {
     const response = await apiClient.post('/auth/invite/generate/');
+    return response.data;
+  },
+
+  // List user's created invite codes
+  listMyInviteCodes: async (): Promise<ListUserInvitesResponse> => {
+    const response = await apiClient.get('/auth/invite/my-codes/');
     return response.data;
   },
 };

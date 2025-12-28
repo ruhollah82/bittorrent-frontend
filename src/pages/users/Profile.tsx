@@ -3,10 +3,12 @@ import { Form, Input, Button, Card, Typography, Avatar, Space, Upload, message, 
 import { UserOutlined, MailOutlined, UploadOutlined, SaveOutlined, DeleteOutlined, GiftOutlined, CrownOutlined } from '@ant-design/icons';
 import { useUserStore } from '../../stores/userStore';
 import { useAuthStore } from '../../stores/authStore';
+import { useCreditStore } from '../../stores/creditStore';
 import { userApi } from '../../services/api/user';
 import { authApi } from '../../services/api/auth';
 import { getUserAvatar } from '../../utils/avatar';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import type { ListUserInvitesResponse } from '../../types/api';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -15,12 +17,21 @@ const Profile = () => {
   const [form] = Form.useForm();
   const { profile, isLoading, error, fetchProfile, updateProfile, clearError } = useUserStore();
   const { user } = useAuthStore();
+  const { balance } = useCreditStore();
   const [generatingInvite, setGeneratingInvite] = useState(false);
   const [generatedInvite, setGeneratedInvite] = useState<{ code: string; expires_at: string; is_active: boolean } | null>(null);
+  const [userInvites, setUserInvites] = useState<ListUserInvitesResponse | null>(null);
+  const [loadingInvites, setLoadingInvites] = useState(false);
 
   useEffect(() => {
     fetchProfile();
   }, [fetchProfile]);
+
+  useEffect(() => {
+    if (profile) {
+      fetchUserInvites();
+    }
+  }, [profile]);
 
   useEffect(() => {
     if (profile) {
@@ -69,24 +80,42 @@ const Profile = () => {
     }
   };
 
+  const fetchUserInvites = async () => {
+    if (!['member', 'trusted', 'elite'].includes(profile?.user_class || '')) {
+      return; // Don't fetch if user can't generate invites
+    }
+
+    setLoadingInvites(true);
+    try {
+      const invites = await authApi.listMyInviteCodes();
+      setUserInvites(invites);
+    } catch (error: any) {
+      console.error('Failed to fetch user invites:', error);
+      // Don't show error message for invites fetch, it's not critical
+    } finally {
+      setLoadingInvites(false);
+    }
+  };
+
   const handleGenerateInvite = async () => {
     setGeneratingInvite(true);
     try {
       const result = await authApi.generateInvite();
       setGeneratedInvite(result);
       message.success('Invite code generated successfully!');
-      // Refresh profile to update credit balance
+      // Refresh profile and invites to update credit balance and invite list
       fetchProfile();
+      fetchUserInvites();
     } catch (error: any) {
       console.error('Failed to generate invite:', error);
       const errorData = error.response?.data;
 
       if (error.response?.status === 403) {
-        message.error(`Access denied: ${errorData?.message || 'Insufficient user class'}`);
+        message.error(errorData?.message || 'دسترسی غیرمجاز');
       } else if (error.response?.status === 402) {
-        message.error(`Insufficient credits: Need ${errorData?.required_credit}, have ${errorData?.available_credit}`);
+        message.error(`اعتبار کافی نیست: نیاز به ${errorData?.required_credit} اعتبار، موجودی ${errorData?.available_credit}`);
       } else if (error.response?.status === 429) {
-        message.error(`Daily limit exceeded: ${errorData?.used_today}/${errorData?.limit} invites used today`);
+        message.error(`محدودیت روزانه: ${errorData?.used_today}/${errorData?.limit} کد دعوت استفاده شده`);
       } else {
         message.error('Failed to generate invite code');
       }
@@ -150,7 +179,7 @@ const Profile = () => {
 
   const uploadProps = {
     name: 'profile_picture',
-    listType: 'picture-card',
+    listType: 'picture-card' as const,
     className: 'avatar-uploader',
     showUploadList: false,
     beforeUpload: handleAvatarUpload,
@@ -320,7 +349,7 @@ const Profile = () => {
               description={
                 <div>
                   <Text strong>User Class:</Text> Member, Trusted, or Elite<br />
-                  <Text strong>Cost:</Text> 5.00 credits per code<br />
+                  <Text strong>Cost:</Text> 1.00 credits per code<br />
                   <Text strong>Daily Limit:</Text> 2 codes per day<br />
                   <Text strong>Expiration:</Text> 7 days from creation
                 </div>
@@ -349,12 +378,11 @@ const Profile = () => {
                 <Card size="small">
                   <Statistic
                     title="Available Credits"
-                    value={(() => {
-                      // This would need to be fetched from balance API
-                      // For now, showing a placeholder
-                      return 'Check Dashboard';
-                    })()}
+                    value={balance ? balance.available_credit : 'Loading...'}
                     prefix={<GiftOutlined />}
+                    valueStyle={{
+                      color: balance && parseFloat(balance.available_credit) >= 1.00 ? '#52c41a' : '#ff4d4f'
+                    }}
                   />
                 </Card>
               </Col>
@@ -387,7 +415,7 @@ const Profile = () => {
                 onClick={handleGenerateInvite}
                 disabled={!['member', 'trusted', 'elite'].includes(profile.user_class || '')}
               >
-                {generatingInvite ? 'Generating...' : 'Generate Invite Code (5.00 credits)'}
+                {generatingInvite ? 'Generating...' : 'Generate Invite Code (1.00 credits)'}
               </Button>
             </div>
 
@@ -412,6 +440,113 @@ const Profile = () => {
             )}
           </Space>
         </Card>
+
+        {/* User's Invite Codes */}
+        {['member', 'trusted', 'elite'].includes(profile.user_class || '') && (
+          <Card title="My Invite Codes" style={{ marginTop: 24 }}>
+            {loadingInvites ? (
+              <LoadingSpinner text="Loading invite codes..." />
+            ) : userInvites ? (
+              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                {/* Stats */}
+                <Row gutter={[16, 16]}>
+                  <Col xs={24} sm={6}>
+                    <Statistic
+                      title="Total Created"
+                      value={userInvites.stats.total_created}
+                      prefix={<GiftOutlined />}
+                    />
+                  </Col>
+                  <Col xs={24} sm={6}>
+                    <Statistic
+                      title="Used"
+                      value={userInvites.stats.total_used}
+                      valueStyle={{ color: '#52c41a' }}
+                    />
+                  </Col>
+                  <Col xs={24} sm={6}>
+                    <Statistic
+                      title="Active"
+                      value={userInvites.stats.total_active}
+                      valueStyle={{ color: '#1890ff' }}
+                    />
+                  </Col>
+                  <Col xs={24} sm={6}>
+                    <Statistic
+                      title="Success Rate"
+                      value={userInvites.stats.success_rate}
+                      suffix="%"
+                      valueStyle={{
+                        color: userInvites.stats.success_rate >= 50 ? '#52c41a' : '#ff4d4f'
+                      }}
+                    />
+                  </Col>
+                </Row>
+
+                {/* Invite Codes List */}
+                {userInvites.invite_codes.length > 0 ? (
+                  <div>
+                    <Title level={5} style={{ marginBottom: 16 }}>Recent Invite Codes</Title>
+                    <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                      {userInvites.invite_codes.slice(0, 5).map((invite) => (
+                        <Card size="small" key={invite.code}>
+                          <Row align="middle" gutter={[16, 8]}>
+                            <Col flex="auto">
+                              <Space direction="vertical" size="small">
+                                <div>
+                                  <Text strong>Code:</Text> <Text code copyable>{invite.code}</Text>
+                                </div>
+                                <div>
+                                  <Text strong>Created:</Text> {invite.created_at_formatted}
+                                </div>
+                                <div>
+                                  <Text strong>Expires:</Text> {invite.expires_at_formatted}
+                                </div>
+                                {invite.used_by_username && (
+                                  <div>
+                                    <Text strong>Used by:</Text> {invite.used_by_username}
+                                  </div>
+                                )}
+                              </Space>
+                            </Col>
+                            <Col>
+                              <Tag
+                                color={
+                                  invite.status === 'active' ? 'success' :
+                                  invite.status === 'used' ? 'processing' : 'error'
+                                }
+                              >
+                                {invite.status.toUpperCase()}
+                              </Tag>
+                            </Col>
+                          </Row>
+                        </Card>
+                      ))}
+                    </Space>
+                    {userInvites.invite_codes.length > 5 && (
+                      <Text type="secondary" style={{ marginTop: 8 }}>
+                        Showing 5 most recent codes. Total: {userInvites.invite_codes.length}
+                      </Text>
+                    )}
+                  </div>
+                ) : (
+                  <Alert
+                    message="No invite codes yet"
+                    description="Generate your first invite code to start earning referral bonuses!"
+                    type="info"
+                    showIcon
+                  />
+                )}
+              </Space>
+            ) : (
+              <Alert
+                message="Unable to load invite codes"
+                type="warning"
+                showIcon
+              />
+            )}
+          </Card>
+        )}
       </div>
     </div>
   );

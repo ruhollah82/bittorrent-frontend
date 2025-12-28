@@ -219,6 +219,49 @@ export interface InviteCode {
   is_active: boolean;
 }
 
+// Invite code generation response
+export interface GenerateInviteResponse {
+  code: string;
+  expires_at: string;
+  is_active: boolean;
+}
+
+// Invite code error responses
+export interface InviteErrorResponse {
+  error: string;
+  message?: string;
+  current_class?: string;
+  required_credit?: string;
+  available_credit?: string;
+  shortage?: string;
+  used_today?: number;
+  limit?: number;
+}
+
+// User's invite codes list response
+export interface UserInviteStats {
+  total_created: number;
+  total_used: number;
+  total_active: number;
+  success_rate: number;
+}
+
+export interface UserInviteCode {
+  code: string;
+  created_at: string;
+  created_at_formatted: string;
+  expires_at: string;
+  expires_at_formatted: string;
+  is_active: boolean;
+  used_by_username: string | null;
+  status: 'active' | 'used' | 'expired';
+}
+
+export interface ListUserInvitesResponse {
+  stats: UserInviteStats;
+  invite_codes: UserInviteCode[];
+}
+
 export interface SystemConfig {
   id: number;
   key: string;
