@@ -1,6 +1,8 @@
-import axios from 'axios';
+import axios from "axios";
 
-const BASE_URL = 'http://127.0.0.1:8000/api';
+// Get API base URL from environment variable, fallback to default if not set
+const BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000/api";
 
 class ApiClient {
   private client: ReturnType<typeof axios.create>;
@@ -19,7 +21,7 @@ class ApiClient {
     // Request interceptor to add auth token
     this.client.interceptors.request.use(
       (config) => {
-        const token = localStorage.getItem('access_token');
+        const token = localStorage.getItem("access_token");
         if (token) {
           // Ensure headers object exists
           if (!config.headers) {
@@ -39,29 +41,43 @@ class ApiClient {
         const originalRequest = error.config;
 
         // Don't retry refresh token endpoint or login endpoint
-        const isAuthEndpoint = originalRequest.url?.includes('/auth/login/') || 
-                               originalRequest.url?.includes('/auth/refresh/');
-        
-        if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
-          console.log('401 error detected, attempting token refresh for:', originalRequest.url);
+        const isAuthEndpoint =
+          originalRequest.url?.includes("/auth/login/") ||
+          originalRequest.url?.includes("/auth/refresh/");
+
+        if (
+          error.response?.status === 401 &&
+          !originalRequest._retry &&
+          !isAuthEndpoint
+        ) {
+          console.log(
+            "401 error detected, attempting token refresh for:",
+            originalRequest.url
+          );
           originalRequest._retry = true;
 
           try {
             await this.refreshToken();
-            const token = localStorage.getItem('access_token');
-            console.log('Retrying request with new token:', token ? 'present' : 'missing');
+            const token = localStorage.getItem("access_token");
+            console.log(
+              "Retrying request with new token:",
+              token ? "present" : "missing"
+            );
             if (token && originalRequest.headers) {
-            originalRequest.headers.Authorization = `Bearer ${token}`;
+              originalRequest.headers.Authorization = `Bearer ${token}`;
             }
             return this.client(originalRequest);
           } catch (refreshError) {
-            console.error('Token refresh failed, redirecting to login:', refreshError);
+            console.error(
+              "Token refresh failed, redirecting to login:",
+              refreshError
+            );
             // Refresh failed, redirect to login
-            localStorage.removeItem('access_token');
-            localStorage.removeItem('refresh_token');
+            localStorage.removeItem("access_token");
+            localStorage.removeItem("refresh_token");
             // Only redirect if we're not already on the login page
-            if (window.location.pathname !== '/login') {
-            window.location.href = '/login';
+            if (window.location.pathname !== "/login") {
+              window.location.href = "/login";
             }
             return Promise.reject(refreshError);
           }
@@ -79,12 +95,15 @@ class ApiClient {
 
     this.refreshPromise = new Promise(async (resolve, reject) => {
       try {
-        const refreshToken = localStorage.getItem('refresh_token');
+        const refreshToken = localStorage.getItem("refresh_token");
         if (!refreshToken) {
-          throw new Error('No refresh token available');
+          throw new Error("No refresh token available");
         }
 
-        console.log('Attempting token refresh with refresh token:', refreshToken ? 'present' : 'missing');
+        console.log(
+          "Attempting token refresh with refresh token:",
+          refreshToken ? "present" : "missing"
+        );
 
         // Use direct axios call to avoid interceptor loops
         const response = await axios.post(
@@ -92,12 +111,12 @@ class ApiClient {
           { refresh: refreshToken },
           {
             headers: {
-              'Content-Type': 'application/json',
+              "Content-Type": "application/json",
             },
           }
         );
 
-        console.log('Refresh response:', response.data);
+        console.log("Refresh response:", response.data);
 
         // Check for different possible response formats
         const data = response.data;
@@ -116,24 +135,26 @@ class ApiClient {
           access = data.tokens.access;
           refresh = data.tokens.refresh;
         } else {
-          console.error('Unexpected refresh response format:', data);
-          throw new Error('Invalid token response format from refresh endpoint');
+          console.error("Unexpected refresh response format:", data);
+          throw new Error(
+            "Invalid token response format from refresh endpoint"
+          );
         }
 
-        console.log('Token refresh successful, storing new tokens');
-        localStorage.setItem('access_token', access);
-        localStorage.setItem('refresh_token', refresh);
+        console.log("Token refresh successful, storing new tokens");
+        localStorage.setItem("access_token", access);
+        localStorage.setItem("refresh_token", refresh);
 
         return { access, refresh };
 
-        localStorage.setItem('access_token', access);
-        localStorage.setItem('refresh_token', refresh);
+        localStorage.setItem("access_token", access);
+        localStorage.setItem("refresh_token", refresh);
 
         resolve(response.data);
       } catch (error) {
         // Clear tokens on refresh failure
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("refresh_token");
         reject(error);
       } finally {
         this.refreshPromise = null;
@@ -147,15 +168,27 @@ class ApiClient {
     return this.client.get(url, config);
   }
 
-  public async post<T = any>(url: string, data?: any, config?: any): Promise<any> {
+  public async post<T = any>(
+    url: string,
+    data?: any,
+    config?: any
+  ): Promise<any> {
     return this.client.post(url, data, config);
   }
 
-  public async put<T = any>(url: string, data?: any, config?: any): Promise<any> {
+  public async put<T = any>(
+    url: string,
+    data?: any,
+    config?: any
+  ): Promise<any> {
     return this.client.put(url, data, config);
   }
 
-  public async patch<T = any>(url: string, data?: any, config?: any): Promise<any> {
+  public async patch<T = any>(
+    url: string,
+    data?: any,
+    config?: any
+  ): Promise<any> {
     return this.client.patch(url, data, config);
   }
 
@@ -164,9 +197,13 @@ class ApiClient {
   }
 
   // File upload helper
-  public async uploadFile(url: string, file: File, additionalData?: Record<string, any>): Promise<any> {
+  public async uploadFile(
+    url: string,
+    file: File,
+    additionalData?: Record<string, any>
+  ): Promise<any> {
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append("file", file);
 
     if (additionalData) {
       Object.entries(additionalData).forEach(([key, value]) => {
@@ -178,7 +215,7 @@ class ApiClient {
 
     return this.client.post(url, formData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        "Content-Type": "multipart/form-data",
       },
     });
   }
